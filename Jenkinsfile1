@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+    tools {
+        maven'M2_HOME'
+    }
+    stages {
+    stage('Initialize') {
+            steps {
+                //enable remote triggers
+                script {
+                    properties([pipelineTriggers([pollSCM('H * * * *')])]
+                    }
+                      //define scm connection for polling
+                git branch: BRANCH_NAME, credentialsId: 'my-credentials', url: 'https://github.com/Ivo-bf/hol.git'
+                
+        stage('build') {
+            steps {
+               sh 'mvn clean'
+               sh 'mvn install'
+               sh 'mvn package'
+            }
+        }
+        stage('test') {
+            steps {
+                echo 'mvn test'
+            }
+        }
+       stage ('build and publish image') {
+      steps {
+        script {
+        checkout scm
+        docker.withRegistry('', 'dockerUserID') {
+        def customImage1 = docker.build("ivof/holiday-pipeline:${env.BUILD_ID}")
+        def customImage = docker.build("ivof/holiday-pipeline")
+        customImage1.push()
+        customImage.push()
+             }
+        } 
+    }
+}
+}
